@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shower Arguments</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="steam steam-1">~</div>
+            <div class="steam steam-2">~</div>
+            <div class="steam steam-3">~</div>
+            <h1>Shower Arguments</h1>
+            <p class="tagline">The comeback you thought of 3 hours later</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <h2>What happened?</h2>
+                <textarea id="situation" placeholder="Someone said something dumb and I froze. They claimed that pineapple doesn't belong on pizza and looked at me like I was a monster. I just stood there. It's been 4 hours and I'm still thinking about it."></textarea>
+
+                <div class="context-section">
+                    <label for="context">What did they actually say? (optional)</label>
+                    <input type="text" id="context" placeholder="Their exact words, if you remember them">
+                </div>
+
+                <button id="generate-btn" onclick="generate()">
+                    <span class="btn-icon">💭</span>
+                    Generate Comebacks
+                </button>
+            </section>
+
+            <section id="results" class="results-section" style="display: none;">
+                <div class="results-header">
+                    <h2>What you should have said:</h2>
+                    <span class="category-badge" id="category"></span>
+                </div>
+
+                <div id="comebacks" class="comebacks-list"></div>
+
+                <div class="bonus-card" id="bonus-card">
+                    <h3>Pro Tip</h3>
+                    <p id="bonus-advice"></p>
+                </div>
+
+                <button class="btn-secondary" onclick="generate()">Try Again</button>
+            </section>
+
+            <section class="explanation">
+                <h2>How it works</h2>
+                <div class="how-grid">
+                    <div class="how-step">
+                        <span class="step-num">1</span>
+                        <p>You describe the argument you should have won</p>
+                    </div>
+                    <div class="how-step">
+                        <span class="step-num">2</span>
+                        <p>Our algorithm analyzes the audacity</p>
+                    </div>
+                    <div class="how-step">
+                        <span class="step-num">3</span>
+                        <p>You get the devastating comeback you deserved</p>
+                    </div>
+                    <div class="how-step">
+                        <span class="step-num">4</span>
+                        <p>Peace of mind (hopefully)</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>For those 3 AM moments when you finally think of the perfect response.</p>
+            <p class="disclaimer">Not responsible for ruined relationships. Use responsibly.</p>
+        </footer>
+    </div>
+
+    <script>
+        async function generate() {
+            const situation = document.getElementById('situation').value;
+            if (!situation.trim()) {
+                alert('Tell us what happened!');
+                return;
+            }
+
+            const context = document.getElementById('context').value;
+            const btn = document.getElementById('generate-btn');
+
+            btn.innerHTML = '<span class="btn-icon">🤔</span> Thinking...';
+            btn.disabled = true;
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ situation, context })
+                });
+
+                const data = await response.json();
+                showResults(data);
+            } catch (error) {
+                alert('Failed to generate comebacks: ' + error.message);
+            }
+
+            btn.innerHTML = '<span class="btn-icon">💭</span> Generate Comebacks';
+            btn.disabled = false;
+        }
+
+        function showResults(data) {
+            document.getElementById('category').textContent = data.category;
+
+            const comebacksList = document.getElementById('comebacks');
+            comebacksList.innerHTML = '';
+
+            data.comebacks.forEach((comeback, i) => {
+                const card = document.createElement('div');
+                card.className = 'comeback-card';
+                card.style.animationDelay = `${i * 0.1}s`;
+                card.innerHTML = `
+                    <span class="comeback-num">${i + 1}</span>
+                    <p class="comeback-text">"${comeback}"</p>
+                    <button class="btn-copy" onclick="copyComeback(this, '${comeback.replace(/'/g, "\\'")}')">Copy</button>
+                `;
+                comebacksList.appendChild(card);
+            });
+
+            document.getElementById('bonus-advice').textContent = data.bonus_advice;
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function copyComeback(btn, text) {
+            navigator.clipboard.writeText(text);
+            btn.textContent = 'Copied!';
+            setTimeout(() => {
+                btn.textContent = 'Copy';
+            }, 2000);
+        }
+
+        // Enter to submit
+        document.getElementById('situation').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.metaKey) {
+                generate();
+            }
+        });
+    </script>
+</body>
+</html>
